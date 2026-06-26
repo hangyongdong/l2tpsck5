@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"runtime"
 	"time"
 
 	"singbox-webui/internal/license"
 	"singbox-webui/internal/rosapi"
 	"singbox-webui/internal/ruleset"
+	"singbox-webui/internal/security"
 	"singbox-webui/internal/singbox"
 	"singbox-webui/internal/store"
 	"singbox-webui/internal/sysinfo"
@@ -17,14 +17,19 @@ import (
 )
 
 type API struct {
-	baseDir string
-	store   *store.Store
-	sb      *singbox.Manager
-	traffic *traffic.Reader
-	lastCPU sysinfo.CPUSample
+	baseDir      string
+	store        *store.Store
+	sb           *singbox.Manager
+	traffic      *traffic.Reader
+	lastCPU      sysinfo.CPUSample
+	authManager  *security.AuthManager
 }
 
 func New(baseDir string) (*API, error) {
+	return NewWithSecurity(baseDir, nil)
+}
+
+func NewWithSecurity(baseDir string, authManager *security.AuthManager) (*API, error) {
 	st, err := store.Open(baseDir)
 	if err != nil {
 		return nil, err
@@ -35,7 +40,14 @@ func New(baseDir string) (*API, error) {
 	}
 
 	sb := singbox.NewManager(baseDir, st)
-	api := &API{baseDir: baseDir, store: st, sb: sb, traffic: traffic.NewReader("127.0.0.1:9090"), lastCPU: sysinfo.ReadCPUSample()}
+	api := &API{
+		baseDir:     baseDir,
+		store:       st,
+		sb:          sb,
+		traffic:     traffic.NewReader("127.0.0.1:9090"),
+		lastCPU:     sysinfo.ReadCPUSample(),
+		authManager: authManager,
+	}
 	if err := sb.Apply(); err != nil {
 		log.Printf("sing-box 初次加载: %v", err)
 	}
@@ -64,10 +76,8 @@ func (a *API) License(w http.ResponseWriter, r *http.Request) {
 func (a *API) Version(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{
 		"status":     "success",
-		"version":    "rewrite-dev",
+		"version":    "2.0.0-secure",
 		"build_time": time.Now().Format(time.RFC3339),
-		"go_version": runtime.Version(),
-		"os_arch":    runtime.GOOS + "/" + runtime.GOARCH,
 	})
 }
 
@@ -79,8 +89,6 @@ func (a *API) Stats(w http.ResponseWriter, r *http.Request) {
 	}
 	memTotal, memUsed, memPercent := sysinfo.Memory()
 	writeJSON(w, http.StatusOK, map[string]any{
-		"os":          runtime.GOOS,
-		"platform":    runtime.GOARCH,
 		"cpu_percent": cpuPercent,
 		"mem_total":   memTotal,
 		"mem_used":    memUsed,
@@ -295,4 +303,12 @@ func (a *API) handleRosGetConfig(w http.ResponseWriter) {
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"status": "success", "exists": true, "config": cfg})
+}
+
+func devicesToAny(devices []any) []any {
+	return devices
+}
+
+func customRulesToAny(rules []any) []any {
+	return rules
 }
