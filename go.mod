@@ -4,7 +4,9 @@ go 1.22
 
 require (
 	github.com/go-chi/chi/v5 v5.2.1
-	modernc.org/sqlite v1.34.5
+	github.com/golang-jwt/jwt/v5 v5.2.0
+	golang.org/x/crypto v0.24.0
+	modern.org/sqlite v1.34.5
 )
 
 require (
@@ -14,7 +16,7 @@ require (
 	github.com/ncruces/go-strftime v0.1.9 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	golang.org/x/sys v0.22.0 // indirect
-	modernc.org/libc v1.55.3 // indirect
-	modernc.org/mathutil v1.6.0 // indirect
-	modernc.org/memory v1.8.0 // indirect
+	modern.org/libc v1.55.3 // indirect
+	modern.org/mathutil v1.6.0 // indirect
+	modern.org/memory v1.8.0 // indirect
 )
